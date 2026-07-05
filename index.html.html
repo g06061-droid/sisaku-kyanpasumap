@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>自作の校舎3Dサイト</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e0f7fa; /* 学校っぽい爽やかな背景色 */
+        }
+        model-viewer {
+            width: 80%;
+            height: 70vh;
+            background-color: #ffffff;
+            border: 2px solid #ccc;
+            border-radius: 12px;
+        }
+    </style>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+</head>
+<body>
+
+    <model-viewer 
+        src="学校めちゃくちゃ.glb" 
+        alt="自作した学校の校舎" 
+        camera-controls 
+        auto-rotate
+        shadow-intensity="1"> </model-viewer>
+
+</body>
+</html>
