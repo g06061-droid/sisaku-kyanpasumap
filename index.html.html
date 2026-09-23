@@ -2,34 +2,195 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>自作の校舎3Dサイト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D校内マップ</title>
+    
+    <!-- Google official 3D viewer library -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+    
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", MeiRyo, sans-serif;
+            background-color: #e0f7fa; /* 爽やかなライトブルー背景 */
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
-            background-color: #e0f7fa; /* 学校っぽい爽やかな背景色 */
+            justify-content: center;
+            min-height: 100vh;
         }
+
+        /* ヘッダー */
+        header {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #006064;
+        }
+
+        p.sub {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #00838f;
+        }
+
+        /* 3D表示エリア */
+        .viewer-container {
+            position: relative;
+            width: 92vw;
+            height: 75vh;
+            max-width: 1200px;
+        }
+
         model-viewer {
-            width: 80%;
-            height: 70vh;
+            width: 100%;
+            height: 100%;
             background-color: #ffffff;
-            border: 2px solid #ccc;
-            border-radius: 12px;
+            border: 2px solid #b2ebf2;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 通知・ファイル選択オーバーレイ */
+        .notice-banner {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #00acc1;
+            padding: 12px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #006064;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        .notice-banner.hidden {
+            display: none;
+        }
+
+        .upload-btn {
+            background-color: #00acc1;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+
+        .upload-btn:hover {
+            background-color: #00838f;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* フッター */
+        footer {
+            margin-top: 12px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #555;
+            text-align: center;
         }
     </style>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 </head>
 <body>
 
-    <model-viewer 
-        src="学校めちゃくちゃ.glb" 
-        alt="自作した学校の校舎" 
-        camera-controls 
-        auto-rotate
-        shadow-intensity="1"> </model-viewer>
+    <header>
+        <h1>🏫 近大高専 3D校内キャンパスマップ</h1>
+        <p class="sub">ドラッグで回転 / スクロールで拡大縮小できます</p>
+    </header>
+
+    <div class="viewer-container">
+        <!-- 案内バナー & テスト用ファイル選択ボタン -->
+        <div id="notice-banner" class="notice-banner hidden">
+            <span>⚠️ school.glb が見つからないか、テスト環境です</span>
+            <label class="upload-btn">
+                3Dファイル (.glb) を選択
+                <input type="file" id="file-input" accept=".glb,.gltf">
+            </label>
+        </div>
+
+        <!-- 3Dモデル表示タグ -->
+        <model-viewer 
+            id="school-viewer"
+            alt="自作した学校の校舎" 
+            camera-controls 
+            auto-rotate
+            shadow-intensity="1.2"
+            exposure="1"
+            camera-orbit="45deg 55deg 105%">
+        </model-viewer>
+    </div>
+
+    <footer>
+        <p>操作方法：[回転] ドラッグ / [拡大] スクロール・ピンチ / [移動] 右クリックドラッグ</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewer = document.getElementById('school-viewer');
+            const banner = document.getElementById('notice-banner');
+            const fileInput = document.getElementById('file-input');
+
+            // 安全な相対パス解決処理 (TypeError: Failed to parse URL 回避)
+            const targetFileName = '学校.glb';
+            let isHttp = false;
+
+            try {
+                const currentHref = window.location.href;
+                // HTTP/HTTPSプロトコル上でのみ相対パスを設定する
+                if (currentHref.startsWith('http://') || currentHref.startsWith('https://')) {
+                    const resolvedUrl = new URL(targetFileName, currentHref).href;
+                    viewer.src = resolvedUrl;
+                    isHttp = true;
+                } else {
+                    // blob: や file: などのプレビュー環境時は手動選択バナーを表示
+                    banner.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.warn('URLの解析に失敗したため、ファイル選択モードを有効にします:', err);
+                banner.classList.remove('hidden');
+            }
+
+            // モデルの読み込みエラー時のフォールバック処理
+            viewer.addEventListener('error', (event) => {
+                console.log('3Dモデルの読み込みエラー:', event);
+                banner.classList.remove('hidden');
+            });
+
+            // 手動で.glbファイルを選択した時の処理（ローカルテスト用）
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const blobUrl = URL.createObjectURL(file);
+                    viewer.src = blobUrl;
+                    banner.classList.add('hidden');
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
